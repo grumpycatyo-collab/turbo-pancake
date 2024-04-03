@@ -1,0 +1,14 @@
+version: '3.5'
+
+services:
+  mariadb:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: 'admin'
+      MYSQL_USER: 'admin'
+      MYSQL_PASSWORD: 'admin'
+      MYSQL_DATABASE: 'db'
+    ports:
+      - "3306:3306"
+    volumes:
+      - '/path/on/host:/var/lib/mysql'
