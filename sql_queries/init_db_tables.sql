@@ -18,15 +18,32 @@ CREATE TABLE source_campaign (
 
 # ======================================================================================================================
 # Random data seeding
-INSERT INTO sources (name)
-SELECT CONCAT('Source_', FLOOR(RAND() * 1000))
-FROM information_schema.tables
-LIMIT 100;
 
-INSERT INTO campaigns (name)
-SELECT CONCAT('Campaign_', FLOOR(RAND() * 1000))
-FROM information_schema.tables
-LIMIT 100;
+-- For sources table
+DELIMITER //
+CREATE PROCEDURE insert_sources()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < 100 DO
+            INSERT INTO sources (name) VALUES (CONCAT('Source_', FLOOR(RAND() * 1000)));
+            SET i = i + 1;
+        END WHILE;
+END //
+DELIMITER ;
+CALL insert_sources();
+
+-- For campaigns table
+DELIMITER //
+CREATE PROCEDURE insert_campaigns()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < 100 DO
+            INSERT INTO campaigns (name) VALUES (CONCAT('Campaign_', FLOOR(RAND() * 1000)));
+            SET i = i + 1;
+        END WHILE;
+END //
+DELIMITER ;
+CALL insert_campaigns();
 
 # ======================================================================================================================
 # Inserting connections between sources and campaign
