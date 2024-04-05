@@ -36,9 +36,11 @@ var (
 )
 
 type Source struct {
+	ID   int    `db:"id"`
 	Name string `db:"name"`
 }
 type Campaign struct {
+	ID   int    `db:"id"`
 	Name string `db:"name"`
 }
 
@@ -67,22 +69,22 @@ func Create(db *sqlx.DB) error {
 	}()
 
 	// NOTE: could've done better but the database/sql driver doesn't allow multiple queries at a time
-	_, err = db.Exec(createSourcesDoc)
+	_, err = tx.Exec(createSourcesDoc)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(createCampaignsDoc)
+	_, err = tx.Exec(createCampaignsDoc)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(createMidDoc)
+	_, err = tx.Exec(createMidDoc)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // Seeding data into sources, campaigns and source_campaign tables
@@ -109,9 +111,11 @@ func Seed(db *sqlx.DB) error {
 		sourceStructs = append(sourceStructs, Source{Name: fmt.Sprintf("Source_%d", rand.Intn(1000))})
 	}
 
-	_, err = db.NamedExec(`INSERT INTO sources (name) VALUES (:name)`, sourceStructs)
-	if err != nil {
-		return err
+	for _, source := range sourceStructs {
+		_, err := tx.Exec(`INSERT INTO sources (name) VALUES (?)`, source.Name)
+		if err != nil {
+			return err
+		}
 	}
 
 	var campaignStructs []Campaign
@@ -119,17 +123,14 @@ func Seed(db *sqlx.DB) error {
 		campaignStructs = append(campaignStructs, Campaign{Name: fmt.Sprintf("Campaign_%d", rand.Intn(1000))})
 	}
 
-	_, err = db.NamedExec(`INSERT INTO campaigns (name) VALUES (:name)`, campaignStructs)
-	if err != nil {
-		return err
+	for _, campaign := range campaignStructs {
+		_, err := tx.Exec(`INSERT INTO campaigns (name) VALUES (?)`, campaign.Name)
+		if err != nil {
+			return err
+		}
 	}
 
-	_, err = db.Exec(insertMidDoc)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // Showing an example how to work with some of SELECTs
@@ -138,20 +139,9 @@ func Show(db *sqlx.DB) error {
 		return fmt.Errorf("status check database: %w", err)
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			fmt.Println("Recovered in defer:", r)
-		}
-	}()
-
 	// Example on selecting top 5 sources
 	result := []Top5{}
-	err = db.Select(&result, top5Doc)
+	err := db.Select(&result, top5Doc)
 	if err != nil {
 		return err
 	}
