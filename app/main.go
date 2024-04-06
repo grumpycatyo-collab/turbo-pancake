@@ -17,7 +17,7 @@ type DB struct {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("\nStartup error \n")
+		fmt.Printf("\nStartup error: %w \n", err)
 		panic("Server crushed")
 	}
 }
