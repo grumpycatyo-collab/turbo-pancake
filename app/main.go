@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/data/dbschema"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
-	"os"
 )
 
 type DB struct {
@@ -18,8 +17,8 @@ type DB struct {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("\nStartup error \n")
-		os.Exit(1)
+		fmt.Printf("\nStartup error: %w \n", err)
+		panic("Server crushed")
 	}
 }
 
@@ -44,16 +43,16 @@ func run() error {
 	}
 	defer db.Close()
 
+	if err := dbschema.DropAll(db); err != nil {
+		fmt.Printf("create tables: %w", err)
+	}
+
 	if err := dbschema.Create(db); err != nil {
 		fmt.Printf("create tables: %w", err)
 	}
 
 	if err := dbschema.Seed(db); err != nil {
 		fmt.Printf("seed database: %w", err)
-	}
-
-	if err := dbschema.Show(db); err != nil {
-		fmt.Printf("show results: %w", err)
 	}
 
 	fmt.Printf("Data seed successful \n")
