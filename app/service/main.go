@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ardanlabs/conf"
+	"github.com/fasthttp/router"
+	"github.com/grumpycatyo-collab/turbo-pancake/app/service/handlers"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
@@ -22,10 +24,6 @@ func main() {
 		fmt.Printf("\nStartup error: %w \n", err)
 		os.Exit(1)
 	}
-}
-
-func requestHandler(ctx *fasthttp.RequestCtx) {
-	fmt.Fprintf(ctx, "Hello, world!\n")
 }
 
 func run(log *zerolog.Logger) error {
@@ -77,8 +75,10 @@ func run(log *zerolog.Logger) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
+	r := router.New()
+	handlers.Routes(r)
 	server := &fasthttp.Server{
-		Handler:      requestHandler,
+		Handler:      r.Handler,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,
