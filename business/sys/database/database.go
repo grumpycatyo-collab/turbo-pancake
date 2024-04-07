@@ -23,8 +23,6 @@ func Open(cfg Config) (*sqlx.DB, error) {
 		fmt.Printf("connect to db: %s", err)
 		return nil, err
 	}
-	fmt.Printf("Connected to %v:%v@tcp(%v:%v)/%v \n", cfg.User, cfg.Password, cfg.Host, "3306", cfg.Name)
-
 	return db, nil
 }
 
