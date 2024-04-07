@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -31,10 +33,11 @@ func run(log *zerolog.Logger) error {
 	cfg := struct {
 		conf.Version
 		Web struct {
-			APIPort      string        `conf:"default::8080"`
-			ReadTimeout  time.Duration `conf:"default:5s"`
-			WriteTimeout time.Duration `conf:"default:10s"`
-			IdleTimeout  time.Duration `conf:"default:120s"`
+			APIPort         string        `conf:"default::8080"`
+			ReadTimeout     time.Duration `conf:"default:5s"`
+			WriteTimeout    time.Duration `conf:"default:10s"`
+			IdleTimeout     time.Duration `conf:"default:120s"`
+			ShutdownTimeout time.Duration `conf:"default:20s,mask"`
 		}
 		DB struct {
 			User       string `conf:"default:admin"`
@@ -71,6 +74,9 @@ func run(log *zerolog.Logger) error {
 	}
 	defer db.Close()
 
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
 	server := &fasthttp.Server{
 		Handler:      requestHandler,
 		ReadTimeout:  cfg.Web.ReadTimeout,
@@ -78,9 +84,26 @@ func run(log *zerolog.Logger) error {
 		IdleTimeout:  cfg.Web.IdleTimeout,
 	}
 
-	log.Info().Msgf("FastHTTP is initializing on port%s", cfg.Web.APIPort)
-	if err := server.ListenAndServe(cfg.Web.APIPort); err != nil {
-		return fmt.Errorf("Error in ListenAndServe: %w\n", err)
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		log.Info().Msgf("FastHTTP is initializing on port%s", cfg.Web.APIPort)
+		serverErrors <- server.ListenAndServe(cfg.Web.APIPort)
+	}()
+
+	// Graceful shutdown in case of multiple services
+	select {
+	case err := <-serverErrors:
+		return fmt.Errorf("server error: %w", err)
+
+	case sig := <-shutdown:
+		log.Info().Msgf("Shutdown started with signal %s", sig)
+		defer log.Info().Msgf("Shutdown completed with signal %s", sig)
+
+		if err := server.Shutdown(); err != nil {
+			return fmt.Errorf("could not stop server gracefully: %w", err)
+		}
 	}
+
 	return nil
 }
