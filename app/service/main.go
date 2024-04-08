@@ -76,7 +76,7 @@ func run(log *zerolog.Logger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	r := router.New()
-	handlers.Routes(r)
+	handlers.Handlers(r, db, log)
 	server := &fasthttp.Server{
 		Handler:      r.Handler,
 		ReadTimeout:  cfg.Web.ReadTimeout,
