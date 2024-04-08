@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/jmoiron/sqlx"
+	"github.com/rs/zerolog"
 	"math/rand"
 	"time"
 )
@@ -45,8 +46,20 @@ type Top5 struct {
 	CampaignCount int64  `db:"campaign_count"`
 }
 
+func InitDB(log *zerolog.Logger, db *sqlx.DB) error {
+	if err := Create(log, db); err != nil {
+		return err
+	}
+
+	if err := Seed(log, db); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Create initial tables
-func Create(db *sqlx.DB) error {
+func Create(log *zerolog.Logger, db *sqlx.DB) error {
+	log.Info().Msg("Creating the source, campaign, source_campaign tables...")
 	if err := database.StatusCheck(db); err != nil {
 		return fmt.Errorf("status check database: %w", err)
 	}
@@ -87,7 +100,8 @@ func Create(db *sqlx.DB) error {
 }
 
 // Seed data into sources, campaigns and source_campaign tables
-func Seed(db *sqlx.DB) error {
+func Seed(log *zerolog.Logger, db *sqlx.DB) error {
+	log.Info().Msg("Seeding the db...")
 	if err := database.StatusCheck(db); err != nil {
 		return fmt.Errorf("status check database: %w", err)
 	}

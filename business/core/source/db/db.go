@@ -27,7 +27,7 @@ func (s Store) QueryCampaignsBySourceID(sourceID int) ([]Campaign, error) {
 	}{
 		SourceID: sourceID,
 	}
-	// TODO: Add loggers
+
 	const q = `
     SELECT
         c.*

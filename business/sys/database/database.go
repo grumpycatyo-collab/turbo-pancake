@@ -49,14 +49,16 @@ func StatusCheck(db *sqlx.DB) error {
 }
 
 func NamedQuerySlice(log *zerolog.Logger, db *sqlx.DB, query string, data interface{}, dest interface{}) error {
+	log.Info().Msg("Called func: NamedQuerySlice with query")
 	val := reflect.ValueOf(dest)
 	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		log.Error().Msg("must provide a pointer to a slice")
 		return errors.New("must provide a pointer to a slice")
 	}
 
-	fmt.Printf("%v", data)
 	rows, err := sqlx.NamedQuery(db, query, data)
 	if err != nil {
+		log.Error().Msgf("err in executing sqlx.NamedQuery: %v,", err)
 		return err
 	}
 
@@ -64,6 +66,7 @@ func NamedQuerySlice(log *zerolog.Logger, db *sqlx.DB, query string, data interf
 	for rows.Next() {
 		v := reflect.New(slice.Type().Elem())
 		if err := rows.StructScan(v.Interface()); err != nil {
+			log.Error().Msgf("err in slicing: %v,", err)
 			return err
 		}
 		slice.Set(reflect.Append(slice, v.Elem()))

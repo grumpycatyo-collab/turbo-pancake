@@ -7,6 +7,7 @@ import (
 	"github.com/grumpycatyo-collab/turbo-pancake/business/core/source"
 	"github.com/valyala/fasthttp"
 	"net/http"
+	"strconv"
 )
 
 type Handlers struct {
@@ -15,16 +16,14 @@ type Handlers struct {
 
 func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 	return func(ctx *fasthttp.RequestCtx) {
-		var request struct {
-			SourceId   int    `json:"id"`
-			SourceName string `json:"name"`
+
+		idStr := ctx.UserValue("id").(string)
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			ctx.SetStatusCode(http.StatusForbidden)
 		}
 
-		if err := json.Unmarshal(ctx.PostBody(), &request); err != nil {
-			ctx.SetStatusCode(http.StatusBadRequest)
-		}
-
-		campaigns, err := h.Core.QueryCampaignsBySourceID(request.SourceId)
+		campaigns, err := h.Core.QueryCampaignsBySourceID(id)
 		if err != nil {
 			switch {
 			case errors.Is(err, source.ErrInvalidID):
@@ -32,12 +31,12 @@ func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 			case errors.Is(err, source.ErrNotFound):
 				ctx.SetStatusCode(http.StatusNotFound)
 			default:
-				fmt.Printf("ID[%s]: %w", request.SourceId, err)
+				fmt.Printf("ID[%s]: %w", id, err)
 			}
 		}
 
 		ctx.SetStatusCode(http.StatusOK)
 		responseBytes, _ := json.Marshal(campaigns)
-		ctx.SetBody(responseBytes)
+		ctx.Response.SetBody(responseBytes)
 	}
 }

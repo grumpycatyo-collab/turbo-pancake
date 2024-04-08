@@ -7,6 +7,7 @@ import (
 	"github.com/ardanlabs/conf"
 	"github.com/fasthttp/router"
 	"github.com/grumpycatyo-collab/turbo-pancake/app/service/handlers"
+	"github.com/grumpycatyo-collab/turbo-pancake/business/data/dbschema"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
@@ -72,10 +73,15 @@ func run(log *zerolog.Logger) error {
 	}
 	defer db.Close()
 
+	if err := dbschema.InitDB(log, db); err != nil {
+		return fmt.Errorf("DB initialization: %w", err)
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	r := router.New()
+
 	handlers.Handlers(r, db, log)
 	server := &fasthttp.Server{
 		Handler:      r.Handler,
