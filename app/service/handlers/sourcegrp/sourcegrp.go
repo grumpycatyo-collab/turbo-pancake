@@ -31,7 +31,7 @@ func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 			case errors.Is(err, source.ErrNotFound):
 				ctx.SetStatusCode(http.StatusNotFound)
 			default:
-				fmt.Printf("ID[%s]: %w", id, err)
+				fmt.Printf("ID[%d]: %w", id, err)
 			}
 		}
 
