@@ -17,7 +17,17 @@ type Handlers struct {
 func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 	return func(ctx *fasthttp.RequestCtx) {
 
-		idStr := ctx.UserValue("id").(string)
+		idVal := ctx.UserValue("id")
+		if idVal == nil {
+			ctx.SetStatusCode(http.StatusBadRequest)
+			return
+		}
+
+		idStr, ok := idVal.(string)
+		if !ok {
+			ctx.SetStatusCode(http.StatusBadRequest)
+			return
+		}
 		domain := string(ctx.QueryArgs().Peek("domain"))
 
 		id, err := strconv.Atoi(idStr)
