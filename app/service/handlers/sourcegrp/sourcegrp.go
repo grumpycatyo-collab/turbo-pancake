@@ -18,12 +18,14 @@ func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 	return func(ctx *fasthttp.RequestCtx) {
 
 		idStr := ctx.UserValue("id").(string)
+		domain := string(ctx.QueryArgs().Peek("domain"))
+
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			ctx.SetStatusCode(http.StatusForbidden)
 		}
 
-		campaigns, err := h.Core.QueryCampaignsBySourceID(id)
+		campaigns, err := h.Core.QueryCampaignsBySourceID(id, domain)
 		if err != nil {
 			switch {
 			case errors.Is(err, source.ErrInvalidID):
