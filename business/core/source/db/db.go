@@ -21,11 +21,13 @@ func NewStore(log *zerolog.Logger, db *sqlx.DB) Store {
 	}
 }
 
-func (s Store) QueryCampaignsBySourceID(sourceID int) ([]Campaign, error) {
+func (s Store) QueryCampaignsBySourceID(sourceID int, domain string) ([]Campaign, error) {
 	data := struct {
-		SourceID int `db:"id"`
+		SourceID int    `db:"id"`
+		Domain   string `db:"domain"`
 	}{
 		SourceID: sourceID,
+		Domain:   domain,
 	}
 
 	const q = `
@@ -36,7 +38,9 @@ func (s Store) QueryCampaignsBySourceID(sourceID int) ([]Campaign, error) {
     INNER JOIN
         source_campaign sc ON c.id = sc.campaign_id
     WHERE 
-        sc.source_id = :id`
+        sc.source_id = :id
+        AND c.domain != :domain
+`
 
 	var campaigns []Campaign
 	if err := database.NamedQuerySlice(s.log, s.db, q, data, &campaigns); err != nil {

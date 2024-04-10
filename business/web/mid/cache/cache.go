@@ -2,18 +2,15 @@ package cache
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/valyala/fasthttp"
 	"sync"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
-type Item struct {
-	Content    []byte
-	Expiration int64
-}
-
-var cache sync.Map
+var (
+	cache     sync.Map
+	semaphore = make(chan struct{}, 1)
+)
 
 // Middleware checks the cache before proceeding to the handler.
 func Middleware(expiration time.Duration, next func(ctx *fasthttp.RequestCtx), log *zerolog.Logger) func(ctx *fasthttp.RequestCtx) {
@@ -28,14 +25,27 @@ func Middleware(expiration time.Duration, next func(ctx *fasthttp.RequestCtx), l
 			}
 		}
 
-		next(ctx)
+		select {
+		case semaphore <- struct{}{}:
+			defer func() {
+				<-semaphore // Release the semaphore after execution
+			}()
+			next(ctx)
 
-		log.Info().Msg("Writing response data into cache")
-		data := ctx.Response.Body()
-		cache.Store(key, Item{
-			Content:    data,
-			Expiration: time.Now().Add(expiration).UnixNano(),
-		})
-
+			log.Info().Msg("Writing response data into cache")
+			data := ctx.Response.Body()
+			cache.Store(key, Item{
+				Content:    data,
+				Expiration: time.Now().Add(expiration).UnixNano(),
+			})
+		default:
+			log.Info().Msg("Another user is accessing the handler, using cache instead")
+			ctx.Response.SetBody([]byte("Handler is currently busy, using cache instead"))
+		}
 	}
+}
+
+type Item struct {
+	Content    []byte
+	Expiration int64
 }

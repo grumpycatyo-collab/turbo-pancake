@@ -37,7 +37,8 @@ type Source struct {
 	Name string `db:"name"`
 }
 type Campaign struct {
-	Name string `db:"name"`
+	Name   string `db:"name"`
+	Domain string `db:"domain"`
 }
 
 type Top5 struct {
@@ -134,12 +135,15 @@ func Seed(log *zerolog.Logger, db *sqlx.DB) error {
 	}
 
 	var campaignStructs []Campaign
+	domains := []string{"google.com", "yahoo.com", "gmail.com", "openai.com"}
+
 	for i := 0; i < 100; i++ {
-		campaignStructs = append(campaignStructs, Campaign{Name: fmt.Sprintf("Campaign_%d", rand.Intn(1000))})
+		domain := domains[rand.Intn(len(domains))] // Randomly select a domain
+		campaignStructs = append(campaignStructs, Campaign{Name: fmt.Sprintf("Campaign_%d", rand.Intn(1000)), Domain: domain})
 	}
 
 	for _, campaign := range campaignStructs {
-		if _, err := tx.Exec(`INSERT INTO campaigns (name) VALUES (?)`, campaign.Name); err != nil {
+		if _, err := tx.Exec(`INSERT INTO campaigns (name, domain) VALUES (?, ?)`, campaign.Name, campaign.Domain); err != nil {
 			if err := tx.Rollback(); err != nil {
 				return err
 			}

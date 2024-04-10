@@ -6,8 +6,9 @@ import (
 )
 
 type Campaign struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Domain string `json:"domain"`
 }
 
 type Source struct {

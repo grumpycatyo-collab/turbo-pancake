@@ -26,8 +26,8 @@ func NewCore(log *zerolog.Logger, sqlxDB *sqlx.DB) Core {
 	}
 }
 
-func (c Core) QueryCampaignsBySourceID(SourceID int) ([]Campaign, error) {
-	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID)
+func (c Core) QueryCampaignsBySourceID(SourceID int, Domain string) ([]Campaign, error) {
+	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID, Domain)
 	if err != nil {
 		if errors.Is(err, database.ErrDBNotFound) {
 			return nil, ErrNotFound
