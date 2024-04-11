@@ -2,7 +2,6 @@ package source
 
 import (
 	"errors"
-	"fmt"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/core/source/db"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/jmoiron/sqlx"
@@ -26,13 +25,19 @@ func NewCore(log *zerolog.Logger, sqlxDB *sqlx.DB) Core {
 	}
 }
 
-func (c Core) QueryCampaignsBySourceID(SourceID int, Domain string) ([]Campaign, error) {
-	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID, Domain)
+func (c Core) QueryCampaignsBySourceID(SourceID int, Domain string, Filter string) ([]Campaign, error) {
+	isBlacklist := false
+	if Filter == "white" {
+		isBlacklist = false
+	} else {
+		isBlacklist = true
+	}
+	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID, Domain, isBlacklist)
 	if err != nil {
 		if errors.Is(err, database.ErrDBNotFound) {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("query: %w", err)
+		return nil, err
 	}
 
 	return toCampaignSlice(dbCampaigns), nil

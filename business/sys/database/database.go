@@ -58,7 +58,7 @@ func NamedQuerySlice(log *zerolog.Logger, db *sqlx.DB, query string, data interf
 
 	rows, err := sqlx.NamedQuery(db, query, data)
 	if err != nil {
-		log.Error().Msgf("err in executing sqlx.NamedQuery: %v,", err)
+		log.Error().Msgf("err in executing sqlx.NamedQuery: %v", err)
 		return err
 	}
 

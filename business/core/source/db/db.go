@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
@@ -21,7 +20,7 @@ func NewStore(log *zerolog.Logger, db *sqlx.DB) Store {
 	}
 }
 
-func (s Store) QueryCampaignsBySourceID(sourceID int, domain string) ([]Campaign, error) {
+func (s Store) QueryCampaignsBySourceID(sourceID int, domain string, isBlacklist bool) ([]Campaign, error) {
 	data := struct {
 		SourceID int    `db:"id"`
 		Domain   string `db:"domain"`
@@ -30,21 +29,36 @@ func (s Store) QueryCampaignsBySourceID(sourceID int, domain string) ([]Campaign
 		Domain:   domain,
 	}
 
-	const q = `
-    SELECT
-        c.*
-    FROM
-        campaigns c
-    INNER JOIN
-        source_campaign sc ON c.id = sc.campaign_id
-    WHERE 
-        sc.source_id = :id
-        AND c.domain != :domain
-`
+	var q string
+	if isBlacklist {
+		q = `
+            SELECT DISTINCT 
+                c.*
+            FROM
+                campaigns c
+            INNER JOIN
+                source_campaign sc ON c.id = sc.campaign_id
+            WHERE 
+                sc.source_id = :id
+                AND c.domain NOT IN (:domain)
+        `
+	} else {
+		q = `
+            SELECT DISTINCT 
+                c.*
+            FROM
+                campaigns c
+            INNER JOIN
+                source_campaign sc ON c.id = sc.campaign_id
+            WHERE 
+                sc.source_id = :id
+                AND c.domain IN (:domain)
+        `
+	}
 
 	var campaigns []Campaign
 	if err := database.NamedQuerySlice(s.log, s.db, q, data, &campaigns); err != nil {
-		return nil, fmt.Errorf("selecting users: %w", err)
+		return nil, err
 	}
 
 	return campaigns, nil
