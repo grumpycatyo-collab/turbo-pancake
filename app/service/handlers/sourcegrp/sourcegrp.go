@@ -3,11 +3,11 @@ package sourcegrp
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/core/source"
 	"github.com/valyala/fasthttp"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Handlers struct {
@@ -28,14 +28,19 @@ func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 			ctx.SetStatusCode(http.StatusBadRequest)
 			return
 		}
-		domain := string(ctx.QueryArgs().Peek("domain"))
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			ctx.SetStatusCode(http.StatusForbidden)
 		}
 
-		campaigns, err := h.Core.QueryCampaignsBySourceID(id, domain)
+		domainStr := string(ctx.QueryArgs().Peek("domain"))
+		domain := strings.ToLower(domainStr)
+
+		filterStr := string(ctx.QueryArgs().Peek("filter"))
+		filter := strings.ToLower(filterStr)
+
+		campaigns, err := h.Core.QueryCampaignsBySourceID(id, domain, filter)
 		if err != nil {
 			switch {
 			case errors.Is(err, source.ErrInvalidID):
@@ -43,7 +48,8 @@ func GetSourceCampaigns(h *Handlers) func(ctx *fasthttp.RequestCtx) {
 			case errors.Is(err, source.ErrNotFound):
 				ctx.SetStatusCode(http.StatusNotFound)
 			default:
-				fmt.Printf("ID[%d]: %w", id, err)
+				//fmt.Printf("ID[%d]: %w", id, err)
+				ctx.SetStatusCode(http.StatusConflict)
 			}
 		}
 
