@@ -28,7 +28,7 @@ func Middleware(expiration time.Duration, next func(ctx *fasthttp.RequestCtx), l
 		select {
 		case semaphore <- struct{}{}:
 			defer func() {
-				<-semaphore // Release the semaphore after execution
+				<-semaphore
 			}()
 			next(ctx)
 
