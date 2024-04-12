@@ -6,6 +6,7 @@ import (
 	"github.com/grumpycatyo-collab/turbo-pancake/business/sys/database"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
+	"strings"
 )
 
 var (
@@ -32,7 +33,10 @@ func (c Core) QueryCampaignsBySourceID(SourceID int, Domain string, Filter strin
 	} else {
 		isBlacklist = true
 	}
-	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID, Domain, isBlacklist)
+
+	domain := ExtractRootDomain(Domain)
+
+	dbCampaigns, err := c.store.QueryCampaignsBySourceID(SourceID, domain, isBlacklist)
 	if err != nil {
 		if errors.Is(err, database.ErrDBNotFound) {
 			return nil, ErrNotFound
@@ -41,4 +45,16 @@ func (c Core) QueryCampaignsBySourceID(SourceID int, Domain string, Filter strin
 	}
 
 	return toCampaignSlice(dbCampaigns), nil
+}
+
+func ExtractRootDomain(domainStr string) string {
+	domain := strings.ToLower(domainStr)
+
+	parts := strings.Split(domain, ".")
+
+	rootIndex := len(parts) - 2
+
+	rootDomain := strings.Join(parts[rootIndex:], ".")
+
+	return rootDomain
 }
