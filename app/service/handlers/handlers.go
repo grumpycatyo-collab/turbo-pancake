@@ -6,6 +6,7 @@ import (
 	"github.com/grumpycatyo-collab/turbo-pancake/app/service/handlers/sourcegrp"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/core/source"
 	"github.com/grumpycatyo-collab/turbo-pancake/business/web/mid/cache"
+	"github.com/grumpycatyo-collab/turbo-pancake/business/web/mid/rate_limiter"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
@@ -21,7 +22,7 @@ func Handlers(r *router.Router, db *sqlx.DB, log *zerolog.Logger) {
 		Core: source.NewCore(log, db),
 	}
 
-	r.GET(fmt.Sprintf("/%s/source/{id}/campaigns", version), cache.Middleware(cacheDuration, sourcegrp.GetSourceCampaigns(&sgh), log))
+	r.GET(fmt.Sprintf("/%s/source/{id}/campaigns", version), rate_limiter.RateLimiter(cache.Middleware(cacheDuration, sourcegrp.GetSourceCampaigns(&sgh), log), log))
 
 	r.GET("/debug/pprof/", fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Index))
 	r.GET("/debug/pprof/cmdline", fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Cmdline))
